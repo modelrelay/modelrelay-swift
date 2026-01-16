@@ -47,6 +47,7 @@ public struct ModelRelayClient {
     public let runs: RunsClient
     public let workflows: WorkflowsClient
     public let stateHandles: StateHandlesClient
+    public let sql: SQLClient
 
     public init(_ config: ClientConfig) throws {
         let normalizedBase = normalizeBaseURL(config.baseURL)
@@ -70,6 +71,7 @@ public struct ModelRelayClient {
         self.runs = RunsClient(http: http, auth: auth)
         self.workflows = WorkflowsClient(http: http, auth: auth)
         self.stateHandles = StateHandlesClient(http: http, auth: auth)
+        self.sql = SQLClient(http: http, auth: auth)
     }
 
     public static func fromAPIKey(_ apiKey: String, baseURL: URL = defaultBaseURL) throws -> ModelRelayClient {
