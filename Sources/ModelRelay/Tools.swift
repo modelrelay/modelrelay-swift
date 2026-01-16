@@ -13,6 +13,29 @@ public struct ToolBuilder: Equatable {
         copy.tools.append(Tool(function: function))
         return copy
     }
+
+    public func addFunction(name: ToolName, description: String? = nil, parameters: JSONValue? = nil) -> ToolBuilder {
+        addFunction(name: name.rawValue, description: description, parameters: parameters)
+    }
+}
+
+public enum ToolName: String, CaseIterable {
+    case fsReadFile = "fs_read_file"
+    case fsListFiles = "fs_list_files"
+    case fsSearch = "fs_search"
+    case fsEdit = "fs_edit"
+    case bash = "bash"
+    case writeFile = "write_file"
+    case tasksWrite = "tasks_write"
+    case kvWrite = "kv_write"
+    case kvRead = "kv_read"
+    case kvList = "kv_list"
+    case kvDelete = "kv_delete"
+    case memoryWrite = "memory_write"
+    case webFetch = "web_fetch"
+    case webSearch = "web_search"
+    case userAsk = "user_ask"
+    case executeSQL = "execute_sql"
 }
 
 public func extractAssistantText(from output: [OutputItem]) -> String {
