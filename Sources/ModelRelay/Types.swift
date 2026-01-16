@@ -327,24 +327,25 @@ public struct CustomerTokenRequest: Encodable, Equatable {
 public struct GetOrCreateCustomerTokenRequest: Encodable, Equatable {
     public let externalId: String
     public let email: String
+    /// Tier code for the customer's subscription (required for new customers).
+    public let tierCode: String
     public let metadata: JSONValue?
     public let ttlSeconds: Int?
-    public let tierCode: String?
 
-    public init(externalId: String, email: String, metadata: JSONValue? = nil, ttlSeconds: Int? = nil, tierCode: String? = nil) {
+    public init(externalId: String, email: String, tierCode: String, metadata: JSONValue? = nil, ttlSeconds: Int? = nil) {
         self.externalId = externalId
         self.email = email
+        self.tierCode = tierCode
         self.metadata = metadata
         self.ttlSeconds = ttlSeconds
-        self.tierCode = tierCode
     }
 
     private enum CodingKeys: String, CodingKey {
         case externalId = "external_id"
         case email
+        case tierCode = "tier_code"
         case metadata
         case ttlSeconds = "ttl_seconds"
-        case tierCode = "tier_code"
     }
 }
 

@@ -84,11 +84,15 @@ final class AuthClient {
     func getOrCreateCustomerToken(request: GetOrCreateCustomerTokenRequest) async throws -> CustomerToken {
         let externalId = request.externalId.trimmingCharacters(in: .whitespacesAndNewlines)
         let email = request.email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let tierCode = request.tierCode.trimmingCharacters(in: .whitespacesAndNewlines)
         if externalId.isEmpty {
             throw ModelRelayError.invalidRequest("externalId is required")
         }
         if email.isEmpty {
             throw ModelRelayError.invalidRequest("email is required")
+        }
+        if tierCode.isEmpty {
+            throw ModelRelayError.invalidRequest("tierCode is required")
         }
         let auth = try await authForResponses()
         guard auth.apiKey != nil else {
