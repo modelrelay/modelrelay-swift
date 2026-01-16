@@ -36,6 +36,9 @@ public enum ToolName: String, CaseIterable {
     case webSearch = "web_search"
     case userAsk = "user_ask"
     case executeSQL = "execute_sql"
+    case listTables = "list_tables"
+    case describeTable = "describe_table"
+    case sampleRows = "sample_rows"
 }
 
 public func extractAssistantText(from output: [OutputItem]) -> String {
