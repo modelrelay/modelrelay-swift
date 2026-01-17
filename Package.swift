@@ -12,6 +12,11 @@ let package = Package(
             name: "ModelRelay",
             dependencies: []
         ),
+        .executableTarget(
+            name: "QuickStart",
+            dependencies: ["ModelRelay"],
+            path: "Examples"
+        ),
         .testTarget(
             name: "ModelRelayTests",
             dependencies: ["ModelRelay"]
