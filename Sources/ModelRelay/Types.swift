@@ -77,7 +77,7 @@ public enum OutputItem: Decodable, Equatable {
         let type = (try? container.decode(String.self, forKey: .type)) ?? ""
         if type == "message" {
             let role = try container.decode(MessageRole.self, forKey: .role)
-            let content = try container.decode([ContentPart].self, forKey: .content)
+            let content = try container.decodeIfPresent([ContentPart].self, forKey: .content) ?? []
             let toolCalls = try container.decodeIfPresent([ToolCall].self, forKey: .toolCalls)
             self = .message(role: role, content: content, toolCalls: toolCalls)
         } else {
@@ -247,6 +247,7 @@ public struct Response: Decodable, Equatable {
     public let usage: Usage
     public var requestId: String?
     public let provider: String?
+    public let decodingWarnings: [ResponseDecodingWarning]?
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -256,6 +257,61 @@ public struct Response: Decodable, Equatable {
         case usage
         case requestId = "request_id"
         case provider
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        stopReason = try container.decodeIfPresent(StopReason.self, forKey: .stopReason)
+        model = try container.decode(String.self, forKey: .model)
+        usage = try container.decode(Usage.self, forKey: .usage)
+        requestId = try container.decodeIfPresent(String.self, forKey: .requestId)
+        provider = try container.decodeIfPresent(String.self, forKey: .provider)
+
+        var outputContainer = try container.nestedUnkeyedContainer(forKey: .output)
+        var decodedOutput: [OutputItem] = []
+        var warnings: [ResponseDecodingWarning] = []
+        var index = 0
+        while !outputContainer.isAtEnd {
+            do {
+                let item = try outputContainer.decode(OutputItem.self)
+                decodedOutput.append(item)
+            } catch {
+                warnings.append(
+                    ResponseDecodingWarning(
+                        index: index,
+                        message: "Failed to decode output item: \(error)"
+                    )
+                )
+                if (try? outputContainer.decode(JSONValue.self)) == nil {
+                    throw error
+                }
+                decodedOutput.append(.other)
+            }
+            index += 1
+        }
+        output = decodedOutput
+        decodingWarnings = warnings.isEmpty ? nil : warnings
+    }
+
+    public init(
+        id: String,
+        output: [OutputItem],
+        stopReason: StopReason?,
+        model: String,
+        usage: Usage,
+        requestId: String?,
+        provider: String?,
+        decodingWarnings: [ResponseDecodingWarning]? = nil
+    ) {
+        self.id = id
+        self.output = output
+        self.stopReason = stopReason
+        self.model = model
+        self.usage = usage
+        self.requestId = requestId
+        self.provider = provider
+        self.decodingWarnings = decodingWarnings
     }
 
     public func text() -> String {
@@ -278,6 +334,16 @@ public struct Response: Decodable, Equatable {
             }
         }
         return chunks
+    }
+}
+
+public struct ResponseDecodingWarning: Equatable, Sendable {
+    public let index: Int
+    public let message: String
+
+    public init(index: Int, message: String) {
+        self.index = index
+        self.message = message
     }
 }
 
