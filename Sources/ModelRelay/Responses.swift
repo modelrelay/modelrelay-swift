@@ -84,6 +84,8 @@ public struct ResponsesRequestOptions: Equatable {
     }
 }
 
+extension ResponsesRequestOptions: Sendable {}
+
 public struct ResponsesClient {
     private let http: HTTPClient
     private let auth: AuthClient

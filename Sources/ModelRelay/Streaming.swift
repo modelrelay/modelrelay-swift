@@ -1,6 +1,6 @@
 import Foundation
 
-public enum ResponseEventType: String, Codable {
+public enum ResponseEventType: String, Codable, Sendable {
     case messageStart = "message_start"
     case messageDelta = "message_delta"
     case messageStop = "message_stop"
@@ -11,7 +11,7 @@ public enum ResponseEventType: String, Codable {
     case custom
 }
 
-public struct ResponseEvent: Equatable {
+public struct ResponseEvent: Equatable, Sendable {
     public let type: ResponseEventType
     public let event: String
     public let data: JSONValue
