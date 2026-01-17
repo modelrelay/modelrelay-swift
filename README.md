@@ -43,6 +43,70 @@ for try await event in stream {
 }
 ```
 
+## SQL Tool Loop (Options)
+
+```swift
+let handlers = SQLToolLoopHandlers(
+    listTables: { [SQLTableInfo(name: "users")] },
+    describeTable: { _ in SQLTableDescription(table: "users", columns: []) },
+    sampleRows: { args in
+        SQLExecuteResult(columns: ["id"], rows: [["id": .number(1)]])
+    },
+    executeSQL: { args in
+        SQLExecuteResult(columns: ["id"], rows: [["id": .number(1)]])
+    }
+)
+
+let result = try await client.sqlToolLoop(
+    model: "claude-sonnet-4-5",
+    prompt: "Count users",
+    handlers: handlers,
+    profileId: "profile_1",
+    maxAttempts: 3,
+    resultLimit: 100,
+    requireSchemaInspection: true,
+    sampleRows: true,
+    sampleRowsLimit: 3,
+    system: "Only use read-only queries"
+)
+print(result.summary)
+```
+
+## SQL Tool Loop (Streaming)
+
+```swift
+let stream = client.sqlToolLoopStream(
+    model: "claude-sonnet-4-5",
+    prompt: "List recent users",
+    handlers: handlers,
+    profileId: "profile_1"
+)
+
+for try await event in stream {
+    switch event {
+    case .summaryDelta(let delta):
+        print(delta, terminator: "")
+    case .executeSQL(let exec):
+        print("Rows:", exec.result.rows.count)
+    case .result(let result):
+        print("Final SQL:", result.sql)
+    default:
+        break
+    }
+}
+```
+
+## SQL Row Helpers
+
+```swift
+let rows = result.rows
+let views = result.rowViews()
+if let first = views.first {
+    print(first.int("id") ?? 0)
+    print(first.string("email") ?? "")
+}
+```
+
 ## Structured Output
 
 ```swift
@@ -83,5 +147,17 @@ if case .success(_, let planHash) = compile {
 ```swift
 let customer = try client.forCustomer("customer-123")
 let text = try await customer.responses.text(model: "claude-sonnet-4-5", user: "Say hi")
+print(text)
+```
+
+## Customer Token Provider
+
+```swift
+let provider = try CustomerTokenProvider(CustomerTokenProviderConfig(
+    secretKey: "mr_sk_...",
+    request: CustomerTokenRequest(customerExternalId: "customer-123")
+))
+let tokenClient = try ModelRelayClient.fromTokenProvider(provider)
+let text = try await tokenClient.responses.text(model: "claude-sonnet-4-5", user: "Hi")
 print(text)
 ```

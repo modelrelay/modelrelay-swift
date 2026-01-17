@@ -36,7 +36,7 @@ public struct SQLValidateRequest: Encodable, Equatable {
     }
 }
 
-public struct SQLValidateResponse: Decodable, Equatable {
+public struct SQLValidateResponse: Decodable, Equatable, Sendable {
     public let valid: Bool
     public let normalizedSQL: String
     public let tables: [String]?

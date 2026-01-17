@@ -86,13 +86,13 @@ public enum OutputItem: Decodable, Equatable {
     }
 }
 
-public enum ToolType: String, Codable {
+public enum ToolType: String, Codable, Sendable {
     case function
     case xSearch = "x_search"
     case codeExecution = "code_execution"
 }
 
-public struct FunctionTool: Codable, Equatable {
+public struct FunctionTool: Codable, Equatable, Sendable {
     public let name: String
     public let description: String?
     public let parameters: JSONValue?
@@ -135,7 +135,7 @@ public struct ToolChoice: Codable, Equatable {
     }
 }
 
-public struct FunctionCall: Codable, Equatable {
+public struct FunctionCall: Codable, Equatable, Sendable {
     public let name: String
     public let arguments: String
 
@@ -145,7 +145,7 @@ public struct FunctionCall: Codable, Equatable {
     }
 }
 
-public struct ToolCall: Codable, Equatable {
+public struct ToolCall: Codable, Equatable, Sendable {
     public let id: String
     public let type: ToolType
     public let function: FunctionCall?
@@ -157,7 +157,7 @@ public struct ToolCall: Codable, Equatable {
     }
 }
 
-public struct ToolCallDelta: Codable, Equatable {
+public struct ToolCallDelta: Codable, Equatable, Sendable {
     public let index: Int
     public let id: String?
     public let type: ToolType?
@@ -171,7 +171,7 @@ public struct ToolCallDelta: Codable, Equatable {
     }
 }
 
-public struct ToolResult: Codable, Equatable {
+public struct ToolResult: Codable, Equatable, Sendable {
     public let toolCallId: String
     public let output: JSONValue
 
@@ -221,7 +221,7 @@ public struct JSONSchemaFormat: Codable, Equatable {
     }
 }
 
-public struct Usage: Codable, Equatable {
+public struct Usage: Codable, Equatable, Sendable {
     public let inputTokens: Int
     public let outputTokens: Int
     public let totalTokens: Int
@@ -281,7 +281,7 @@ public struct Response: Decodable, Equatable {
     }
 }
 
-public struct StopReason: RawRepresentable, Codable, Equatable {
+public struct StopReason: RawRepresentable, Codable, Equatable, Sendable {
     public let rawValue: String
 
     public init(rawValue: String) {
@@ -289,7 +289,7 @@ public struct StopReason: RawRepresentable, Codable, Equatable {
     }
 }
 
-public struct RetryConfig: Codable, Equatable {
+public struct RetryConfig: Codable, Equatable, Sendable {
     public let maxAttempts: Int?
     public let baseBackoffMs: Int?
     public let maxBackoffMs: Int?
