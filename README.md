@@ -5,7 +5,7 @@ Native Swift client for the ModelRelay API, modeled after the Rust SDK.
 ## Install (Swift Package Manager)
 
 ```swift
-.package(url: "https://github.com/modelrelay/modelrelay-swift", from: "0.3.5"),
+.package(url: "https://github.com/modelrelay/modelrelay-swift", from: "0.4.0"),
 ```
 
 ```swift

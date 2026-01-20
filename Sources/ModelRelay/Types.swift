@@ -9,10 +9,12 @@ public enum MessageRole: String, Codable {
 
 public enum ContentPart: Codable, Equatable {
     case text(String)
+    case file(FileContent)
 
     private enum CodingKeys: String, CodingKey {
         case type
         case text
+        case file
     }
 
     public init(from decoder: Decoder) throws {
@@ -22,6 +24,9 @@ public enum ContentPart: Codable, Equatable {
         case "text":
             let text = try container.decode(String.self, forKey: .text)
             self = .text(text)
+        case "file":
+            let file = try container.decode(FileContent.self, forKey: .file)
+            self = .file(file)
         default:
             throw ModelRelayError.decoding("Unsupported content part: \(type)")
         }
@@ -33,7 +38,31 @@ public enum ContentPart: Codable, Equatable {
         case .text(let text):
             try container.encode("text", forKey: .type)
             try container.encode(text, forKey: .text)
+        case .file(let file):
+            try container.encode("file", forKey: .type)
+            try container.encode(file, forKey: .file)
         }
+    }
+}
+
+public struct FileContent: Codable, Equatable {
+    public let dataBase64: String
+    public let mimeType: String
+    public let filename: String?
+    public let sizeBytes: Int64?
+
+    public init(dataBase64: String, mimeType: String, filename: String? = nil, sizeBytes: Int64? = nil) {
+        self.dataBase64 = dataBase64
+        self.mimeType = mimeType
+        self.filename = filename
+        self.sizeBytes = sizeBytes
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case dataBase64 = "data_base64"
+        case mimeType = "mime_type"
+        case filename
+        case sizeBytes = "size_bytes"
     }
 }
 
