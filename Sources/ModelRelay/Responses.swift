@@ -57,6 +57,95 @@ public struct ResponsesRequest: Encodable, Equatable {
     }
 }
 
+public struct ResponsesBatchItem: Encodable, Equatable {
+    public let id: String
+    public let request: ResponsesRequest
+
+    public init(id: String, request: ResponsesRequest) {
+        self.id = id
+        self.request = request
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try request.encode(to: encoder)
+    }
+}
+
+public struct ResponsesBatchOptions: Encodable, Equatable {
+    public let maxConcurrent: Int?
+    public let failFast: Bool?
+    public let timeoutMs: Int?
+
+    public init(maxConcurrent: Int? = nil, failFast: Bool? = nil, timeoutMs: Int? = nil) {
+        self.maxConcurrent = maxConcurrent
+        self.failFast = failFast
+        self.timeoutMs = timeoutMs
+    }
+
+    fileprivate var isEmpty: Bool {
+        maxConcurrent == nil && failFast == nil && timeoutMs == nil
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case maxConcurrent = "max_concurrent"
+        case failFast = "fail_fast"
+        case timeoutMs = "timeout_ms"
+    }
+}
+
+public struct ResponsesBatchRequestOptions: Equatable {
+    public var headers: [String: String]
+    public var timeout: TimeInterval?
+    public var customerId: String?
+    public var requestId: String?
+    public var retry: RetryConfig?
+    public var maxConcurrent: Int?
+    public var failFast: Bool?
+    public var itemTimeoutMs: Int?
+
+    public init(
+        headers: [String: String] = [:],
+        timeout: TimeInterval? = nil,
+        customerId: String? = nil,
+        requestId: String? = nil,
+        retry: RetryConfig? = nil,
+        maxConcurrent: Int? = nil,
+        failFast: Bool? = nil,
+        itemTimeoutMs: Int? = nil
+    ) {
+        self.headers = headers
+        self.timeout = timeout
+        self.customerId = customerId
+        self.requestId = requestId
+        self.retry = retry
+        self.maxConcurrent = maxConcurrent
+        self.failFast = failFast
+        self.itemTimeoutMs = itemTimeoutMs
+    }
+
+    public func merging(_ override: ResponsesBatchRequestOptions?) -> ResponsesBatchRequestOptions {
+        guard let override else { return self }
+        var merged = self
+        merged.headers.merge(override.headers) { _, new in new }
+        if let timeout = override.timeout { merged.timeout = timeout }
+        if let customerId = override.customerId { merged.customerId = customerId }
+        if let requestId = override.requestId { merged.requestId = requestId }
+        if let retry = override.retry { merged.retry = retry }
+        if let maxConcurrent = override.maxConcurrent { merged.maxConcurrent = maxConcurrent }
+        if let failFast = override.failFast { merged.failFast = failFast }
+        if let itemTimeoutMs = override.itemTimeoutMs { merged.itemTimeoutMs = itemTimeoutMs }
+        return merged
+    }
+}
+
+extension ResponsesBatchRequestOptions: Sendable {}
+
 public struct ResponsesRequestOptions: Equatable {
     public var headers: [String: String]
     public var timeout: TimeInterval?
@@ -85,6 +174,11 @@ public struct ResponsesRequestOptions: Equatable {
 }
 
 extension ResponsesRequestOptions: Sendable {}
+
+private struct ResponsesBatchRequest: Encodable {
+    let requests: [ResponsesBatchItem]
+    let options: ResponsesBatchOptions?
+}
 
 public struct ResponsesClient {
     private let http: HTTPClient
@@ -117,6 +211,60 @@ public struct ResponsesClient {
             path: "/responses",
             method: "POST",
             body: request,
+            headers: headers,
+            auth: authHeaders,
+            timeout: mergedOptions.timeout,
+            retry: mergedOptions.retry
+        )
+        return response
+    }
+
+    public func batch(_ requests: [ResponsesBatchItem], options: ResponsesBatchRequestOptions? = nil) async throws -> ResponsesBatchResponse {
+        if requests.isEmpty {
+            throw ModelRelayError.invalidRequest("responses batch requests must not be empty")
+        }
+        let mergedOptions = ResponsesBatchRequestOptions().merging(options)
+        var headers = mergedOptions.headers
+        if let customerId = mergedOptions.customerId {
+            headers[customerIdHeader] = customerId
+        }
+        if let requestId = mergedOptions.requestId {
+            headers[requestIdHeader] = requestId
+        }
+
+        var seen = Set<String>()
+        var payloadItems: [ResponsesBatchItem] = []
+        payloadItems.reserveCapacity(requests.count)
+        for item in requests {
+            let trimmedId = item.id.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedId.isEmpty {
+                throw ModelRelayError.invalidRequest("request id must not be empty")
+            }
+            if seen.contains(trimmedId) {
+                throw ModelRelayError.invalidRequest("request ids must be unique")
+            }
+            seen.insert(trimmedId)
+            if item.request.input.isEmpty {
+                throw ModelRelayError.invalidRequest("responses batch item input must not be empty")
+            }
+            payloadItems.append(ResponsesBatchItem(id: trimmedId, request: item.request))
+        }
+
+        let batchOptions = ResponsesBatchOptions(
+            maxConcurrent: mergedOptions.maxConcurrent,
+            failFast: mergedOptions.failFast,
+            timeoutMs: mergedOptions.itemTimeoutMs
+        )
+        let payload = ResponsesBatchRequest(
+            requests: payloadItems,
+            options: batchOptions.isEmpty ? nil : batchOptions
+        )
+
+        let authHeaders = try await auth.authForResponses()
+        let response: ResponsesBatchResponse = try await http.json(
+            path: "/responses/batch",
+            method: "POST",
+            body: payload,
             headers: headers,
             auth: authHeaders,
             timeout: mergedOptions.timeout,

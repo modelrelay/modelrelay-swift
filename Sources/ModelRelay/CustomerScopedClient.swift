@@ -23,6 +23,12 @@ public struct CustomerResponsesClient {
         }
     }
 
+    private func assertCustomerMatch(_ options: ResponsesBatchRequestOptions?) throws {
+        if let provided = options?.customerId, provided != customerId {
+            throw ModelRelayError.invalidConfiguration("customerId mismatch")
+        }
+    }
+
     public func builder() -> ResponseBuilder {
         ResponseBuilder().customerId(customerId)
     }
@@ -38,6 +44,13 @@ public struct CustomerResponsesClient {
         try assertCustomerMatch(options)
         let merged = builder.options.merging(ResponsesRequestOptions(customerId: customerId).merging(options))
         return try await responses.create(builder.request, options: merged)
+    }
+
+    public func batch(_ requests: [ResponsesBatchItem], options: ResponsesBatchRequestOptions? = nil) async throws -> ResponsesBatchResponse {
+        try assertCustomerMatch(options)
+        var merged = ResponsesBatchRequestOptions(customerId: customerId).merging(options)
+        merged.customerId = customerId
+        return try await responses.batch(requests, options: merged)
     }
 
     public func text(model: String, system: String? = nil, user: String) async throws -> String {

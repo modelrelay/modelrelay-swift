@@ -16,6 +16,7 @@ Swift Package for ModelRelay API (Swift 6.2).
 - Extract assistant text via `Response.text()` / `Response.textChunks()`
 - `Response.decodingWarnings` captures malformed output items (missing role/invalid shape) while still decoding the response.
 - `ResponsesClient.create` validates `input` is non-empty and applies `X-ModelRelay-Customer-Id` / `X-ModelRelay-Request-Id` headers from options
+- `ResponsesClient.batch` posts `/responses/batch` with `ResponsesBatchItem` + `ResponsesBatchRequestOptions` (`maxConcurrent`, `failFast`, `itemTimeoutMs`) and returns `ResponsesBatchResponse` usage totals.
 - `ResponseBuilder` stores both request payload and per-call options (headers, timeout, customerId, requestId, retry)
 - SQL tool loop streaming: `ModelRelayClient.sqlToolLoopStream` emits `SQLToolLoopStreamEvent` for deltas, schema inspection, validation, execute SQL, and final result
 - SQL results: `SQLExecuteResult.rowViews()` provides ordered rows with typed accessors via `SQLRowView`

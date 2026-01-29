@@ -268,6 +268,42 @@ public struct Usage: Codable, Equatable, Sendable {
     }
 }
 
+public struct ResponsesBatchUsage: Decodable, Equatable {
+    public let totalInputTokens: Int
+    public let totalOutputTokens: Int
+    public let totalRequests: Int
+    public let successfulRequests: Int
+    public let failedRequests: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case totalInputTokens = "total_input_tokens"
+        case totalOutputTokens = "total_output_tokens"
+        case totalRequests = "total_requests"
+        case successfulRequests = "successful_requests"
+        case failedRequests = "failed_requests"
+    }
+}
+
+public struct ResponsesBatchError: Decodable, Equatable {
+    public let status: Int
+    public let message: String
+    public let detail: String?
+    public let code: String?
+}
+
+public struct ResponsesBatchResult: Decodable, Equatable {
+    public let id: String
+    public let status: String
+    public let response: Response?
+    public let error: ResponsesBatchError?
+}
+
+public struct ResponsesBatchResponse: Decodable, Equatable {
+    public let id: String
+    public let results: [ResponsesBatchResult]
+    public let usage: ResponsesBatchUsage
+}
+
 public struct Response: Decodable, Equatable {
     public let id: String
     public let output: [OutputItem]

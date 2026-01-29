@@ -166,6 +166,67 @@ final class ClientNetworkTests: XCTestCase {
         XCTAssertTrue(result.value.ok)
         XCTAssertEqual(result.attempts, 2)
     }
+
+    func testResponsesBatchSendsHeadersAndOptions() async throws {
+        let session = makeStubbedSession()
+        let http = HTTPClient(
+            baseURL: URL(string: "https://example.com/api/v1/")!,
+            clientHeaderValue: "test-client",
+            defaultHeaders: [:],
+            session: session,
+            defaultTimeout: 5
+        )
+        let auth = AuthClient(http: http, config: AuthConfig(apiKey: "mr_sk_test"))
+        let client = ResponsesClient(http: http, auth: auth)
+
+        enqueueStub { request in
+            let json = """
+            {"id":"batch_1","results":[{"id":"one","status":"success","response":{"id":"resp_1","output":[{"type":"message","role":"assistant","content":[{"type":"text","text":"ok"}]}],"stop_reason":"completed","model":"claude","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}},{"id":"two","status":"error","error":{"status":400,"message":"bad request","code":"INVALID"}}],"usage":{"total_input_tokens":2,"total_output_tokens":1,"total_requests":2,"successful_requests":1,"failed_requests":1}}
+            """
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, Data(json.utf8))
+        }
+
+        let first = ResponseBuilder().model("claude").user("hi")
+        let second = ResponseBuilder().model("claude").user("yo")
+        let options = ResponsesBatchRequestOptions(
+            customerId: "cust_123",
+            requestId: "req_456",
+            maxConcurrent: 5,
+            failFast: true,
+            itemTimeoutMs: 1500
+        )
+
+        _ = try await client.batch(
+            [
+                ResponsesBatchItem(id: "one", request: first.request),
+                ResponsesBatchItem(id: "two", request: second.request),
+            ],
+            options: options
+        )
+
+        let request = try XCTUnwrap(stubRequests().first)
+        XCTAssertEqual(request.value(forHTTPHeaderField: customerIdHeader), "cust_123")
+        XCTAssertEqual(request.value(forHTTPHeaderField: requestIdHeader), "req_456")
+
+        let body: Data
+        if let httpBody = request.httpBody {
+            body = httpBody
+        } else if let stream = request.httpBodyStream {
+            body = readBody(stream)
+        } else {
+            XCTFail("Expected request body")
+            return
+        }
+        let object = try JSONSerialization.jsonObject(with: body) as? [String: Any]
+        let optionsPayload = object?["options"] as? [String: Any]
+        XCTAssertEqual(optionsPayload?["max_concurrent"] as? Int, 5)
+        XCTAssertEqual(optionsPayload?["fail_fast"] as? Bool, true)
+        XCTAssertEqual(optionsPayload?["timeout_ms"] as? Int, 1500)
+        let requestsPayload = object?["requests"] as? [[String: Any]]
+        XCTAssertEqual(requestsPayload?.count, 2)
+        XCTAssertEqual(requestsPayload?.first?["id"] as? String, "one")
+    }
 }
 
 private func readBody(_ stream: InputStream) -> Data {
