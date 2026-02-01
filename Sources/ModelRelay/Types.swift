@@ -521,3 +521,409 @@ public struct AccountBalanceResponse: Decodable, Equatable {
         case lowBalanceThresholdCents = "low_balance_threshold_cents"
     }
 }
+
+// MARK: - Billing Types
+
+/// Billing mode for a tier.
+public enum TierBillingMode: String, Codable, Equatable, Sendable {
+    case subscription
+    case paygo
+}
+
+/// Billing provider backing the subscription or tier.
+public enum BillingProvider: String, Codable, Equatable, Sendable {
+    case stripe
+    case crypto
+    case appStore = "app_store"
+    case external
+}
+
+/// Billing interval for a tier.
+public enum PriceInterval: String, Codable, Equatable, Sendable {
+    case month
+    case year
+}
+
+/// Subscription status kind.
+public enum SubscriptionStatusKind: String, Codable, Equatable, Sendable {
+    case active
+    case trialing
+    case pastDue = "past_due"
+    case canceled
+    case unpaid
+    case incomplete
+    case incompleteExpired = "incomplete_expired"
+    case paused
+}
+
+/// Customer information.
+public struct Customer: Codable, Equatable {
+    public let id: UUID?
+    public let projectId: UUID?
+    public let externalId: String?
+    public let email: String?
+    public let metadata: JSONValue?
+    public let createdAt: Date?
+    public let updatedAt: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case projectId = "project_id"
+        case externalId = "external_id"
+        case email
+        case metadata
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+/// Subscription information.
+public struct Subscription: Codable, Equatable {
+    public let id: UUID?
+    public let customerId: UUID?
+    public let projectId: UUID?
+    public let tierId: UUID?
+    public let tierCode: String?
+    public let billingProvider: BillingProvider?
+    public let billingSubscriptionId: String?
+    public let subscriptionStatus: SubscriptionStatusKind?
+    public let currentPeriodStart: Date?
+    public let currentPeriodEnd: Date?
+    public let createdAt: Date?
+    public let updatedAt: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case customerId = "customer_id"
+        case projectId = "project_id"
+        case tierId = "tier_id"
+        case tierCode = "tier_code"
+        case billingProvider = "billing_provider"
+        case billingSubscriptionId = "billing_subscription_id"
+        case subscriptionStatus = "subscription_status"
+        case currentPeriodStart = "current_period_start"
+        case currentPeriodEnd = "current_period_end"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+/// Model configuration for a tier.
+public struct TierModel: Codable, Equatable {
+    public let id: UUID
+    public let tierId: UUID
+    public let modelId: String
+    public let modelDisplayName: String
+    public let description: String
+    public let capabilities: [String]
+    public let contextWindow: Int32
+    public let maxOutputTokens: Int32
+    public let deprecated: Bool
+    public let modelInputCostCents: Int64
+    public let modelOutputCostCents: Int64
+    public let isDefault: Bool
+    public let createdAt: Date
+    public let updatedAt: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case tierId = "tier_id"
+        case modelId = "model_id"
+        case modelDisplayName = "model_display_name"
+        case description
+        case capabilities
+        case contextWindow = "context_window"
+        case maxOutputTokens = "max_output_tokens"
+        case deprecated
+        case modelInputCostCents = "model_input_cost_cents"
+        case modelOutputCostCents = "model_output_cost_cents"
+        case isDefault = "is_default"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+/// Tier configuration.
+public struct Tier: Codable, Equatable {
+    public let id: UUID?
+    public let projectId: UUID?
+    public let tierCode: String?
+    public let displayName: String?
+    public let billingMode: TierBillingMode?
+    public let billingProvider: BillingProvider?
+    public let billingPriceRef: String?
+    public let spendLimitCents: UInt64?
+    public let priceAmountCents: UInt64?
+    public let priceCurrency: String?
+    public let priceInterval: PriceInterval?
+    public let trialDays: UInt32?
+    public let promoCreditsCents: UInt64?
+    public let models: [TierModel]?
+    public let createdAt: Date?
+    public let updatedAt: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case projectId = "project_id"
+        case tierCode = "tier_code"
+        case displayName = "display_name"
+        case billingMode = "billing_mode"
+        case billingProvider = "billing_provider"
+        case billingPriceRef = "billing_price_ref"
+        case spendLimitCents = "spend_limit_cents"
+        case priceAmountCents = "price_amount_cents"
+        case priceCurrency = "price_currency"
+        case priceInterval = "price_interval"
+        case trialDays = "trial_days"
+        case promoCreditsCents = "promo_credits_cents"
+        case models
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+/// Customer profile with optional subscription and tier.
+public struct CustomerMe: Codable, Equatable {
+    public let customer: Customer
+    public let subscription: Subscription?
+    public let tier: Tier?
+}
+
+/// Response wrapper for CustomerMe.
+public struct CustomerMeResponse: Decodable, Equatable {
+    public let customer: CustomerMe
+}
+
+/// Customer-visible subscription details.
+public struct CustomerMeSubscription: Codable, Equatable {
+    public let tierCode: String
+    public let tierDisplayName: String
+    public let subscriptionStatus: SubscriptionStatusKind?
+    public let priceAmountCents: Int64?
+    public let priceCurrency: String?
+    public let priceInterval: PriceInterval?
+    public let currentPeriodStart: Date?
+    public let currentPeriodEnd: Date?
+
+    private enum CodingKeys: String, CodingKey {
+        case tierCode = "tier_code"
+        case tierDisplayName = "tier_display_name"
+        case subscriptionStatus = "subscription_status"
+        case priceAmountCents = "price_amount_cents"
+        case priceCurrency = "price_currency"
+        case priceInterval = "price_interval"
+        case currentPeriodStart = "current_period_start"
+        case currentPeriodEnd = "current_period_end"
+    }
+}
+
+/// Response wrapper for CustomerMeSubscription.
+public struct CustomerMeSubscriptionResponse: Decodable, Equatable {
+    public let subscription: CustomerMeSubscription
+}
+
+/// Daily usage data point.
+public struct CustomerUsagePoint: Codable, Equatable {
+    public let day: Date
+    public let requests: Int64
+    public let tokens: Int64
+    public let images: Int64?
+}
+
+/// Customer-visible usage metrics.
+public struct CustomerMeUsage: Codable, Equatable {
+    public let windowStart: Date
+    public let windowEnd: Date
+    public let requests: Int64
+    public let tokens: Int64
+    public let images: Int64
+    public let totalCostCents: Int64
+    public let daily: [CustomerUsagePoint]
+    public let spendLimitCents: Int64?
+    public let spendRemainingCents: Int64?
+    public let percentageUsed: Float?
+    public let low: Bool?
+    public let overageEnabled: Bool?
+    public let walletBalanceCents: Int64?
+    public let walletReservedCents: Int64?
+
+    private enum CodingKeys: String, CodingKey {
+        case windowStart = "window_start"
+        case windowEnd = "window_end"
+        case requests
+        case tokens
+        case images
+        case totalCostCents = "total_cost_cents"
+        case daily
+        case spendLimitCents = "spend_limit_cents"
+        case spendRemainingCents = "spend_remaining_cents"
+        case percentageUsed = "percentage_used"
+        case low
+        case overageEnabled = "overage_enabled"
+        case walletBalanceCents = "wallet_balance_cents"
+        case walletReservedCents = "wallet_reserved_cents"
+    }
+}
+
+/// Response wrapper for CustomerMeUsage.
+public struct CustomerMeUsageResponse: Decodable, Equatable {
+    public let usage: CustomerMeUsage
+}
+
+/// Customer PAYGO balance (customer-scoped endpoint).
+public struct CustomerBalanceResponse: Decodable, Equatable {
+    public let customerId: UUID
+    public let billingProfileId: UUID
+    public let balanceCents: Int64
+    public let reservedCents: Int64
+    public let currency: String
+
+    private enum CodingKeys: String, CodingKey {
+        case customerId = "customer_id"
+        case billingProfileId = "billing_profile_id"
+        case balanceCents = "balance_cents"
+        case reservedCents = "reserved_cents"
+        case currency
+    }
+}
+
+/// Ledger entry for PAYGO balance history.
+public struct CustomerLedgerEntry: Codable, Equatable {
+    public let id: UUID
+    public let direction: String
+    public let reason: String
+    public let amountCents: Int64
+    public let description: String
+    public let occurredAt: Date
+    public let balanceAfterCents: Int64?
+    public let grossAmountCents: Int64?
+    public let creditAmountCents: Int64?
+    public let ownerRevenueCents: Int64?
+    public let platformFeeCents: Int64?
+    public let inputTokens: Int64?
+    public let outputTokens: Int64?
+    public let modelId: String?
+    public let requestId: UUID?
+    public let stripeCheckoutSessionId: String?
+    public let stripeInvoiceId: String?
+    public let stripePaymentIntentId: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case direction
+        case reason
+        case amountCents = "amount_cents"
+        case description
+        case occurredAt = "occurred_at"
+        case balanceAfterCents = "balance_after_cents"
+        case grossAmountCents = "gross_amount_cents"
+        case creditAmountCents = "credit_amount_cents"
+        case ownerRevenueCents = "owner_revenue_cents"
+        case platformFeeCents = "platform_fee_cents"
+        case inputTokens = "input_tokens"
+        case outputTokens = "output_tokens"
+        case modelId = "model_id"
+        case requestId = "request_id"
+        case stripeCheckoutSessionId = "stripe_checkout_session_id"
+        case stripeInvoiceId = "stripe_invoice_id"
+        case stripePaymentIntentId = "stripe_payment_intent_id"
+    }
+}
+
+/// Response wrapper for ledger history.
+public struct CustomerLedgerResponse: Decodable, Equatable {
+    public let entries: [CustomerLedgerEntry]
+}
+
+/// Request to create a PAYGO top-up checkout session.
+public struct CustomerTopupRequest: Encodable, Equatable {
+    public let creditAmountCents: Int64
+    public let successUrl: String
+    public let cancelUrl: String
+
+    public init(creditAmountCents: Int64, successUrl: String, cancelUrl: String) {
+        self.creditAmountCents = creditAmountCents
+        self.successUrl = successUrl
+        self.cancelUrl = cancelUrl
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case creditAmountCents = "credit_amount_cents"
+        case successUrl = "success_url"
+        case cancelUrl = "cancel_url"
+    }
+}
+
+/// Response from creating a PAYGO top-up checkout session.
+public struct CustomerTopupResponse: Decodable, Equatable {
+    public let sessionId: String
+    public let checkoutUrl: String
+    public let grossAmountCents: Int64
+    public let creditAmountCents: Int64
+    public let ownerRevenueCents: Int64
+    public let platformFeeCents: Int64
+    public let status: String
+
+    private enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case checkoutUrl = "checkout_url"
+        case grossAmountCents = "gross_amount_cents"
+        case creditAmountCents = "credit_amount_cents"
+        case ownerRevenueCents = "owner_revenue_cents"
+        case platformFeeCents = "platform_fee_cents"
+        case status
+    }
+}
+
+/// Request to change subscription tier.
+public struct ChangeTierRequest: Encodable, Equatable {
+    public let tierCode: String
+
+    public init(tierCode: String) {
+        self.tierCode = tierCode
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case tierCode = "tier_code"
+    }
+}
+
+/// Request to create a checkout session.
+public struct CustomerMeCheckoutRequest: Encodable, Equatable {
+    public let tierCode: String
+    public let successUrl: String
+    public let cancelUrl: String
+
+    public init(tierCode: String, successUrl: String, cancelUrl: String) {
+        self.tierCode = tierCode
+        self.successUrl = successUrl
+        self.cancelUrl = cancelUrl
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case tierCode = "tier_code"
+        case successUrl = "success_url"
+        case cancelUrl = "cancel_url"
+    }
+}
+
+/// Response from creating a checkout session.
+public struct CheckoutSessionResponse: Decodable, Equatable {
+    public let sessionId: String
+    public let url: String
+
+    private enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id"
+        case url
+    }
+}
+
+/// Response wrapper for tier list.
+public struct TierListResponse: Decodable, Equatable {
+    public let tiers: [Tier]
+}
+
+/// Response wrapper for single tier.
+public struct TierResponse: Decodable, Equatable {
+    public let tier: Tier
+}
