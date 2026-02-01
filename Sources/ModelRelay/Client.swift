@@ -113,6 +113,33 @@ public struct ModelRelayClient {
     public func getOrCreateCustomerToken(request: GetOrCreateCustomerTokenRequest) async throws -> CustomerToken {
         try await auth.getOrCreateCustomerToken(request: request)
     }
+
+    /// Returns the authenticated account's PAYGO balance.
+    ///
+    /// This method accepts both API key (`X-ModelRelay-Api-Key`) and bearer token
+    /// authentication, enabling programmatic balance checks from backend services.
+    ///
+    /// - Returns: The account balance information.
+    /// - Throws: `ModelRelayError` if authentication fails or the request fails.
+    ///
+    /// ```swift
+    /// let client = try ModelRelayClient.fromAPIKey("mr_sk_...")
+    /// let balance = try await client.accountBalance()
+    /// print("Balance: \(balance.balanceCents) cents")
+    /// print("Formatted: \(balance.balanceFormatted)")
+    /// ```
+    public func accountBalance() async throws -> AccountBalanceResponse {
+        let authHeaders = try await auth.authForBilling()
+        return try await http.json(
+            path: "/account/balance",
+            method: "GET",
+            body: Optional<String>.none,
+            headers: [:],
+            auth: authHeaders,
+            timeout: nil,
+            retry: nil
+        )
+    }
 }
 
 private func normalizeBaseURL(_ url: URL) -> URL {

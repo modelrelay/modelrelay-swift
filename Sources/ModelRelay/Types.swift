@@ -503,3 +503,21 @@ public struct CustomerToken: Decodable, Equatable {
         case tierCode = "tier_code"
     }
 }
+
+public struct AccountBalanceResponse: Decodable, Equatable {
+    /// Current account balance in cents.
+    public let balanceCents: Int64
+    /// Human-readable balance (e.g., "$50.00").
+    public let balanceFormatted: String
+    /// Currency code (e.g., "usd").
+    public let currency: String
+    /// Low balance threshold in cents.
+    public let lowBalanceThresholdCents: Int64
+
+    private enum CodingKeys: String, CodingKey {
+        case balanceCents = "balance_cents"
+        case balanceFormatted = "balance_formatted"
+        case currency
+        case lowBalanceThresholdCents = "low_balance_threshold_cents"
+    }
+}
